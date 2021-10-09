@@ -7,7 +7,7 @@ import magic
 import subprocess
 import time
 
-from bot import DOWNLOAD_DIR, LOGGER, aria2, TG_SPLIT_SIZE
+from bot import DOWNLOAD_DIR, LOGGER, aria2, TG_SPLIT_SIZE, ARIA_CHILD_PROC, MEGA_CHILD_PROC
 from .exceptions import NotSupportedExtractionArchive
 
 from PIL import Image
@@ -42,13 +42,15 @@ def clean_all():
 
 def exit_clean_up(signal, frame):
     try:
-        LOGGER.info(
-            "Please wait, while we clean up the downloads and stop running downloads"
-        )
+        LOGGER.info("Please wait, while we clean up the downloads and stop running downloads")
         clean_all()
+        ARIA_CHILD_PROC.kill()
+        MEGA_CHILD_PROC.kill()
         sys.exit(0)
     except KeyboardInterrupt:
         LOGGER.warning("Force Exiting before the cleanup finishes!")
+        ARIA_CHILD_PROC.kill()
+        MEGA_CHILD_PROC.kill()
         sys.exit(1)
 
 
