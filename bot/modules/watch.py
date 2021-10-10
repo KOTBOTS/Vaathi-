@@ -78,7 +78,7 @@ def leechWatch(update, context):
 
 
 def leechWatchZip(update, context):
-    _watch(context.bot, update, True, True, True)
+    _watch(context.bot, update, True, True)
 
 
 mirror_handler = CommandHandler(
