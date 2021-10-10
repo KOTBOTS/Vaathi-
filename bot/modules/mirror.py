@@ -431,7 +431,7 @@ def _mirror(bot, update, isTar=False, isZip=False, extract=False, isLeech=False)
                 return
 
         
-    listener = MirrorListener(bot, update, pswd, isZip, tag, extract, isLeech)
+    listener = MirrorListener(bot, update, pswd, tag, isZip, extract, isLeech)
     
     
     if bot_utils.is_gdrive_link(link):
