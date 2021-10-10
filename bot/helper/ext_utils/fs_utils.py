@@ -7,6 +7,7 @@ import magic
 import subprocess
 import time
 import json
+import math
 
 from bot import DOWNLOAD_DIR, LOGGER, aria2, TG_SPLIT_SIZE, ARIA_CHILD_PROC, MEGA_CHILD_PROC
 from .exceptions import NotSupportedExtractionArchive
