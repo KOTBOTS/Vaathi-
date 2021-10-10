@@ -75,10 +75,9 @@ ariaDlManager.start_listener()
 
 class MirrorListener(listeners.MirrorListeners):
     def __init__(
-        self, bot, update, pswd, isTar=False, isZip=False, tag=None, extract=False, isLeech=False
+        self, bot, update, pswd, isZip=False, tag=None, extract=False, isLeech=False
     ):
         super().__init__(bot, update)
-        self.isTar = isTar
         self.isZip = isZip
         self.tag = tag
         self.isLeech = isLeech
@@ -110,13 +109,6 @@ class MirrorListener(listeners.MirrorListeners):
             if name is None:  # when pyrogram's media.file_name is of NoneType
                 name = os.listdir(f"{DOWNLOAD_DIR}{self.uid}")[0]
             m_path = f"{DOWNLOAD_DIR}{self.uid}/{name}"
-        if self.isTar:
-            name = str(download.name()).replace('/', '')
-            gid = download.gid()
-            size = download.size_raw()
-            if name is None:  # when pyrogram's media.file_name is of NoneType
-                name = os.listdir(f'{DOWNLOAD_DIR}{self.uid}')[0]
-            m_path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         if self.isZip:
             try:
                 with download_dict_lock:
@@ -490,10 +482,6 @@ def mirror(update, context):
     _mirror(context.bot, update)
 
 
-def tar_mirror(update, context):
-    _mirror(context.bot, update, True, isTar=True)
-
-
 def zip_mirror(update, context):
     _mirror(context.bot, update, True, isZip=True)
 
@@ -504,10 +492,6 @@ def unzip_mirror(update, context):
 
 def leech(update, context):
     _mirror(context.bot, update, isLeech=True)
-
-
-def tar_leech(update, context):
-    _mirror(context.bot, update, True, isLeech=True)
 
 
 def unzip_leech(update, context):
@@ -521,12 +505,6 @@ def zip_leech(update, context):
 mirror_handler = CommandHandler(
     BotCommands.MirrorCommand,
     mirror,
-    filters=CustomFilters.authorized_chat | CustomFilters.authorized_user,
-    run_async=True,
-)
-tar_mirror_handler = CommandHandler(
-    BotCommands.TarMirrorCommand,
-    tar_mirror,
     filters=CustomFilters.authorized_chat | CustomFilters.authorized_user,
     run_async=True,
 )
@@ -544,17 +522,14 @@ unzip_mirror_handler = CommandHandler(
 )
 leech_handler = CommandHandler(BotCommands.LeechCommand, leech,
                                filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
-tar_leech_handler = CommandHandler(BotCommands.TarLeechCommand, tar_leech,
-                                   filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+
 unzip_leech_handler = CommandHandler(BotCommands.UnzipLeechCommand, unzip_leech,
                                      filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
 zip_leech_handler = CommandHandler(BotCommands.ZipLeechCommand, zip_leech,
                                    filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
 dispatcher.add_handler(mirror_handler)
-dispatcher.add_handler(tar_mirror_handler)
 dispatcher.add_handler(zip_mirror_handler)
 dispatcher.add_handler(unzip_mirror_handler)
 dispatcher.add_handler(leech_handler)
-dispatcher.add_handler(tar_leech_handler)
 dispatcher.add_handler(unzip_leech_handler)
 dispatcher.add_handler(zip_leech_handler)
