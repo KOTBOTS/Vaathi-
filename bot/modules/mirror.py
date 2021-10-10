@@ -69,11 +69,10 @@ ariaDlManager.start_listener()
 
 class MirrorListener(listeners.MirrorListeners):
     def __init__(
-        self, bot, update, pswd, tag=None, isZip=False, extract=False, isLeech=False
+        self, bot, update, pswd, isZip=False, extract=False, isLeech=False
     ):
         super().__init__(bot, update)
         self.isZip = isZip
-        self.tag = tag
         self.isLeech = isLeech
         self.extract = extract
         self.pswd = pswd
@@ -474,7 +473,7 @@ def mirror(update, context):
 
 
 def zip_mirror(update, context):
-    _mirror(context.bot, update, True)
+    _mirror(context.bot, update, isZip=True)
 
 
 def unzip_mirror(update, context):
@@ -490,7 +489,7 @@ def unzip_leech(update, context):
 
 
 def zip_leech(update, context):
-    _mirror(context.bot, update, True, isLeech=True)
+    _mirror(context.bot, update, isZip=True, isLeech=True)
 
 
 mirror_handler = CommandHandler(
