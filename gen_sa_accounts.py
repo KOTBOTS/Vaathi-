@@ -395,9 +395,7 @@ if __name__ == "__main__":
                 % args.credentials
             )
     if args.quick_setup:
-        opt = "*"
-        if args.new_only:
-            opt = "~"
+        opt = "~" if args.new_only else "*"
         args.services = ["iam", "drive"]
         args.create_projects = args.quick_setup
         args.enable_services = opt

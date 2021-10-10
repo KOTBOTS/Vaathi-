@@ -9,7 +9,6 @@ import time
 import subprocess
 import psycopg2
 import pkgutil
-import pathlib
 import sys
 
 
@@ -77,6 +76,15 @@ try:
         exit()
 except KeyError:
     pass
+
+aria2 = aria2p.API(
+    aria2p.Client(
+        host="http://localhost",
+        port=6800,
+        secret="",
+    )
+)
+
 CWD = os.getcwd()
 ariaconfig = pkgutil.get_data("bot", "data/aria.conf").decode()
 dhtfile = pkgutil.get_data("bot", "data/dht.dat")
@@ -105,14 +113,6 @@ except OSError:
     sys.exit(0)
 time.sleep(1)
 
-aria2 = aria2p.API(
-    aria2p.Client(
-        host="http://localhost",
-        port=6800,
-        secret="",
-    )
-)
-
 DOWNLOAD_DIR = None
 BOT_TOKEN = None
 
@@ -127,6 +127,8 @@ download_dict = {}
 # Stores list of users and chats the bot is authorized to use in
 AUTHORIZED_CHATS = set()
 SUDO_USERS = set()
+AS_DOC_USERS = set()
+AS_MEDIA_USERS = set()
 if os.path.exists("authorized_chats.txt"):
     with open("authorized_chats.txt", "r+") as f:
         lines = f.readlines()
@@ -346,6 +348,17 @@ try:
         STOP_DUPLICATE_MIRROR = False
 except KeyError:
     STOP_DUPLICATE_MIRROR = False
+try:
+    TG_SPLIT_SIZE = getConfig('TG_SPLIT_SIZE')
+    if len(TG_SPLIT_SIZE) == 0 or int(TG_SPLIT_SIZE) > 2097152000:
+        raise KeyError
+except KeyError:
+    TG_SPLIT_SIZE = 2097152000
+try:
+    AS_DOCUMENT = getConfig('AS_DOCUMENT')
+    AS_DOCUMENT = AS_DOCUMENT.lower() == 'true'
+except KeyError:
+    AS_DOCUMENT = False
 
 updater = tg.Updater(token=BOT_TOKEN)
 bot = updater.bot

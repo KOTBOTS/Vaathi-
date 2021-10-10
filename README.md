@@ -21,10 +21,6 @@ magnet/torrents
 
 - Rename Drive files
 
-Let's have some chit chat here -
-[@Magneto_chit_chat](https://t.me/magneto_chit_chat) Note :- it is not a Bot
-Support group. It's only for discussing rubbish things bcoz i want your help to
-learn coding .
 
 ## Credits :-
 

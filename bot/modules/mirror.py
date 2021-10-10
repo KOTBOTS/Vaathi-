@@ -6,10 +6,13 @@ import string
 import subprocess
 import threading
 import urllib
-
 import requests
+import time
+import shutil
+
 from telegram import InlineKeyboardMarkup
 from telegram.ext import CommandHandler
+from fnmatch import fnmatch
 
 from bot import (
     BLOCK_MEGA_LINKS,
@@ -27,9 +30,11 @@ from bot import (
     SHORTENER,
     SHORTENER_API,
     Interval,
+    aria2,
     dispatcher,
     download_dict,
     download_dict_lock,
+    TG_SPLIT_SIZE,
 )
 from bot.helper.ext_utils import bot_utils, fs_utils
 from bot.helper.ext_utils.bot_utils import setInterval
@@ -46,11 +51,13 @@ from bot.helper.mirror_utils.download_utils.telegram_downloader import (
     TelegramDownloadHelper,
 )
 from bot.helper.mirror_utils.status_utils import listeners
+from bot.helper.mirror_utils.status_utils.split_status import SplitStatus
+from bot.helper.mirror_utils.status_utils.tg_upload_status import TgUploadStatus
 from bot.helper.mirror_utils.status_utils.extract_status import ExtractStatus
 from bot.helper.mirror_utils.status_utils.gdownload_status import DownloadStatus
 from bot.helper.mirror_utils.status_utils.upload_status import UploadStatus
 from bot.helper.mirror_utils.status_utils.zip_status import ZipStatus
-from bot.helper.mirror_utils.upload_utils import gdriveTools
+from bot.helper.mirror_utils.upload_utils import gdriveTools, pyrogramEngine
 from bot.helper.telegram_helper import button_build
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -68,12 +75,12 @@ ariaDlManager.start_listener()
 
 class MirrorListener(listeners.MirrorListeners):
     def __init__(
-        self, bot, update, pswd, isTar=False, isZip=False, tag=None, extract=False
+        self, bot, update, pswd, isTar=False, isZip=False, extract=False, isLeech=False
     ):
         super().__init__(bot, update)
         self.isTar = isTar
         self.isZip = isZip
-        self.tag = tag
+        self.isLeech = isLeech
         self.extract = extract
         self.pswd = pswd
 
@@ -97,19 +104,24 @@ class MirrorListener(listeners.MirrorListeners):
             LOGGER.info(f"Download completed: {download_dict[self.uid].name()}")
             download = download_dict[self.uid]
             name = download.name()
+            gid = download.gid()
             size = download.size_raw()
             if name is None:  # when pyrogram's media.file_name is of NoneType
                 name = os.listdir(f"{DOWNLOAD_DIR}{self.uid}")[0]
             m_path = f"{DOWNLOAD_DIR}{self.uid}/{name}"
+        if self.isTar:
+            name = str(download.name()).replace('/', '')
+            gid = download.gid()
+            size = download.size_raw()
+            if name is None:  # when pyrogram's media.file_name is of NoneType
+                name = os.listdir(f'{DOWNLOAD_DIR}{self.uid}')[0]
+            m_path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         if self.isZip:
             download.is_archiving = True
             try:
                 with download_dict_lock:
                     download_dict[self.uid] = ZipStatus(name, m_path, size)
-                if self.isZip:
-                    path = fs_utils.zip(name, m_path)
-                else:
-                    path = fs_utils.tar(m_path)
+                path = fs_utils.zip(name, m_path) if self.isZip else fs_utils.tar(m_path)
             except FileNotFoundError:
                 LOGGER.info("File to archive not found!")
                 self.onUploadError("Internal error occurred!")
@@ -140,17 +152,37 @@ class MirrorListener(listeners.MirrorListeners):
         else:
             path = f"{DOWNLOAD_DIR}{self.uid}/{name}"
         up_name = pathlib.PurePath(path).name
-        if up_name == "None":
-            up_name = "".join(os.listdir(f"{DOWNLOAD_DIR}{self.uid}/"))
-        up_path = f"{DOWNLOAD_DIR}{self.uid}/{up_name}"
-        LOGGER.info(f"Upload Name: {up_name}")
-        drive = gdriveTools.GoogleDriveHelper(up_name, self)
+        up_path = f'{DOWNLOAD_DIR}{self.uid}/{up_name}'
         size = fs_utils.get_path_size(up_path)
-        upload_status = UploadStatus(drive, size, self)
-        with download_dict_lock:
-            download_dict[self.uid] = upload_status
-        update_all_messages()
-        drive.upload(up_name)
+        if self.isLeech:
+            checked = False
+            for dirpath, subdir, files in os.walk(f'{DOWNLOAD_DIR}{self.uid}', topdown=False):
+                for file in files:
+                    f_path = os.path.join(dirpath, file)
+                    f_size = os.path.getsize(f_path)
+                    if int(f_size) > TG_SPLIT_SIZE:
+                        if not checked:
+                            checked = True
+                            with download_dict_lock:
+                                download_dict[self.uid] = SplitStatus(up_name, up_path, size)
+                            LOGGER.info(f"Splitting: {up_name}")
+                        fs_utils.split(f_path, f_size, file, dirpath, TG_SPLIT_SIZE)
+                        os.remove(f_path)
+            LOGGER.info(f"Leech Name: {up_name}")
+            tg = pyrogramEngine.TgUploader(up_name, self)
+            tg_upload_status = TgUploadStatus(tg, size, gid, self)
+            with download_dict_lock:
+                download_dict[self.uid] = tg_upload_status
+            update_all_messages()
+            tg.upload()
+        else:
+            LOGGER.info(f"Upload Name: {up_name}")
+            drive = gdriveTools.GoogleDriveHelper(up_name, self)
+            upload_status = UploadStatus(drive, size, self)
+            with download_dict_lock:
+                download_dict[self.uid] = upload_status
+            update_all_messages()
+            drive.upload(up_name)
 
     def onDownloadError(self, error):
         error = error.replace("<", " ")
@@ -183,7 +215,44 @@ class MirrorListener(listeners.MirrorListeners):
     def onUploadProgress(self):
         pass
 
-    def onUploadComplete(self, link: str, size):
+    def onUploadComplete(self, link: str, size, files, folders, typ):
+        if self.isLeech:
+            if self.message.from_user.username:
+                uname = f"@{self.message.from_user.username}"
+            else:
+                uname = f'<a href="tg://user?id={self.message.from_user.id}">{self.message.from_user.first_name}</a>'
+            count = len(files)
+            if self.message.chat.type == 'private':
+                msg = f'<b>Name:</b> <code>{link}</code>\n'
+                msg += f'\n<b>Total Files:</b> {count}'
+                sendMessage(msg, self.bot, self.update)
+            else:
+                chat_id = str(self.message.chat.id)[4:]
+                msg = f"<b>Name:</b> <a href='https://t.me/c/{chat_id}/{self.uid}'>{link}</a>\n"
+                msg += f'\n<b>Total Files:</b> {count}\n'
+                msg += f'\ncc: {uname}\n\n'
+                fmsg = ''
+                for index, item in enumerate(list(files), start=1):
+                    msg_id = files[item]
+                    link = f"https://t.me/c/{chat_id}/{msg_id}"
+                    fmsg += f"🚩 <a href='{link}'>{item}</a>\n"
+                    if len(fmsg) > 3900:
+                        sendMessage(msg + fmsg, self.bot, self.update)
+                        fmsg = ''
+                if fmsg != '':
+                    sendMessage(msg + fmsg, self.bot, self.update)
+            with download_dict_lock:
+                try:
+                    fs_utils.clean_download(download_dict[self.uid].path())
+                except FileNotFoundError:
+                    pass
+                del download_dict[self.uid]
+                count = len(download_dict)
+            if count == 0:
+                self.clean()
+            else:
+                update_all_messages()
+            return
         with download_dict_lock:
             msg = f"<b>Filename:</b> <code>{download_dict[self.uid].name()}</code>\n<b>Size:</b> <code>{size}</code>"
             buttons = button_build.ButtonMaker()
@@ -244,14 +313,20 @@ class MirrorListener(listeners.MirrorListeners):
                 pass
             del download_dict[self.message.message_id]
             count = len(download_dict)
-        sendMessage(e_str, self.bot, self.update)
+        if self.message.from_user.username:
+            uname = f"@{self.message.from_user.username}"
+        else:
+            uname = f'<a href="tg://user?id={self.message.from_user.id}">{self.message.from_user.first_name}</a>'
+        if uname is not None:
+            men = f'{uname} '
+        sendMessage(men + e_str, self.bot, self.update)
         if count == 0:
             self.clean()
         else:
             update_all_messages()
 
 
-def _mirror(bot, update, isTar=False, isZip=False, extract=False):
+def _mirror(bot, update, isTar=False, isZip=False, extract=False, isLeech=False):
     mesg = update.message.text.split("\n")
     message_args = mesg[0].split(" ")
     name_args = mesg[0].split("|")
@@ -300,7 +375,7 @@ def _mirror(bot, update, isTar=False, isZip=False, extract=False):
             or len(link) == 0
         ) and file is not None:
             if file.mime_type != "application/x-bittorrent":
-                listener = MirrorListener(bot, update, pswd, isTar, isZip, tag, extract)
+                listener = MirrorListener(bot, update, pswd, isTar, isZip, tag, extract, isLeech=isLeech)
                 tg_downloader = TelegramDownloadHelper(listener)
                 tg_downloader.add_download(
                     reply_to, f"{DOWNLOAD_DIR}{listener.uid}/", name
@@ -325,14 +400,14 @@ def _mirror(bot, update, isTar=False, isZip=False, extract=False):
         link = direct_link_generator(link)
     except DirectDownloadLinkException as e:
         LOGGER.info(f"{link}: {e}")
-    listener = MirrorListener(bot, update, pswd, isTar, isZip, tag, extract)
+    listener = MirrorListener(bot, update, pswd, isTar, isZip, extract, isLeech)
     if bot_utils.is_gdrive_link(link):
-        if not isZip and not extract:
+        if not isZip and not extract and not isLeech:
             sendMessage(
                 f"Use /{BotCommands.CloneCommand} to copy File/Folder", bot, update
             )
             return
-        res, size, name = gdriveTools.GoogleDriveHelper().clonehelper(link)
+        res, size, name, files = gdriveTools.GoogleDriveHelper().helper(link)
         if res != "":
             sendMessage(res, bot, update)
             return
@@ -375,15 +450,31 @@ def mirror(update, context):
 
 
 def tar_mirror(update, context):
-    _mirror(context.bot, update, isTar=True)
+    _mirror(context.bot, update, True, isTar=True)
 
 
 def zip_mirror(update, context):
-    _mirror(context.bot, update, isZip=True)
+    _mirror(context.bot, update, True, isZip=True)
 
 
 def unzip_mirror(update, context):
     _mirror(context.bot, update, extract=True)
+
+
+def leech(update, context):
+    _mirror(context.bot, update, isLeech=True)
+
+
+def tar_leech(update, context):
+    _mirror(context.bot, update, True, isLeech=True)
+
+
+def unzip_leech(update, context):
+    _mirror(context.bot, update, extract=True, isLeech=True)
+
+
+def zip_leech(update, context):
+    _mirror(context.bot, update, True, isZip=True, isLeech=True)
 
 
 mirror_handler = CommandHandler(
@@ -410,7 +501,19 @@ unzip_mirror_handler = CommandHandler(
     filters=CustomFilters.authorized_chat | CustomFilters.authorized_user,
     run_async=True,
 )
+leech_handler = CommandHandler(BotCommands.LeechCommand, leech,
+                               filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+tar_leech_handler = CommandHandler(BotCommands.TarLeechCommand, tar_leech,
+                                   filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+unzip_leech_handler = CommandHandler(BotCommands.UnzipLeechCommand, unzip_leech,
+                                     filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+zip_leech_handler = CommandHandler(BotCommands.ZipLeechCommand, zip_leech,
+                                   filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
 dispatcher.add_handler(mirror_handler)
 dispatcher.add_handler(tar_mirror_handler)
 dispatcher.add_handler(zip_mirror_handler)
 dispatcher.add_handler(unzip_mirror_handler)
+dispatcher.add_handler(leech_handler)
+dispatcher.add_handler(tar_leech_handler)
+dispatcher.add_handler(unzip_leech_handler)
+dispatcher.add_handler(zip_leech_handler)

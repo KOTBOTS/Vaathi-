@@ -30,6 +30,7 @@ from bot.modules import (  # noqa
     mirror,
     mirror_status,
     watch,
+    leech_settings,
 )
 
 

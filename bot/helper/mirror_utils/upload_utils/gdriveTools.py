@@ -786,10 +786,7 @@ class GoogleDriveHelper:
                 err = err.last_attempt.exception()
             err = str(err).replace(">", "").replace("<", "")
             LOGGER.error(err)
-            if "File not found" in str(err):
-                msg = "File not found!"
-            else:
-                msg = f"Error.\n{err}"
+            msg = "File not found!" if "File not found" in str(err) else f"Error.\n{err}"
             return msg, "", ""
         return "", clonesize, name
 
@@ -870,7 +867,7 @@ class GoogleDriveHelper:
         fh = io.FileIO(f"{path}{filename}", "wb")
         downloader = MediaIoBaseDownload(fh, request, chunksize=100 * 1024 * 1024)
         done = False
-        while done is False:
+        while not done:
             if self.is_cancelled:
                 fh.close()
                 break
@@ -885,18 +882,15 @@ class GoogleDriveHelper:
                         .get("reason")
                     )
                     if (
-                        reason == "userRateLimitExceeded"
-                        or reason == "dailyLimitExceeded"
+                        reason in ["userRateLimitExceeded", "dailyLimitExceeded"]
+                        and USE_SERVICE_ACCOUNTS
                     ):
-                        if USE_SERVICE_ACCOUNTS:
-                            if not self.switchServiceAccount():
-                                raise err
-                            LOGGER.info(f"Got: {reason}, Trying Again...")
-                            return self.download_file(
-                                file_id, path, filename, mime_type
-                            )
-                        else:
+                        if not self.switchServiceAccount():
                             raise err
+                        LOGGER.info(f"Got: {reason}, Trying Again...")
+                        return self.download_file(
+                            file_id, path, filename, mime_type
+                        )
                     else:
                         raise err
         self._file_downloaded_bytes = 0

@@ -21,6 +21,7 @@ class MirrorStatus:
     STATUS_CANCELLED = "Cancelled. ❌ Cleaning download..."
     STATUS_ARCHIVING = "Archiving...🔐"
     STATUS_EXTRACTING = "Extracting...📂"
+    STATUS_SPLITTING = "Splitting...✂️"
 
 
 PROGRESS_MAX_SIZE = 100 // 8
@@ -70,6 +71,7 @@ def getDownloadByGid(gid):
                     MirrorStatus.STATUS_UPLOADING,
                     MirrorStatus.STATUS_ARCHIVING,
                     MirrorStatus.STATUS_EXTRACTING,
+                    MirrorStatus.STATUS_SPLITTING,
                 ]
                 and dl.gid() == gid
             ):
@@ -101,6 +103,7 @@ def get_readable_message():
             if download.status() not in [
                 MirrorStatus.STATUS_ARCHIVING,
                 MirrorStatus.STATUS_EXTRACTING,
+                MirrorStatus.STATUS_SPLITTING,
             ]:
                 msg += f"\n<code>{get_progress_bar_string(download)}</code> - <i>{download.progress()}</i>"
                 if download.status() == MirrorStatus.STATUS_DOWNLOADING:

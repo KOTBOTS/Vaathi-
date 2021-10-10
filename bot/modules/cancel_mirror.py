@@ -33,21 +33,28 @@ def cancel_mirror(update, context):
         if (
             BotCommands.MirrorCommand in update.message.text
             or BotCommands.TarMirrorCommand in update.message.text
+            or BotCommands.UnzipMirrorCommand in mirror_message.text
         ):
             msg = "Mirror already have been cancelled!"
         else:
             msg = f"Please reply to the <code>/{BotCommands.MirrorCommand}</code> message which was used to start the download or <code>/{BotCommands.CancelMirror} GID</code> to cancel it!"
         sendMessage(msg, context.bot, update)
         return
-    if dl.status() == "Uploading":
+    if dl.status() == MirrorStatus.STATUS_UPLOADING:
         sendMessage("Upload in Progress, Don't Cancel it!", context.bot, update)
         return
-    elif dl.status() == "Archiving":
+    elif dl.status() == MirrorStatus.STATUS_ARCHIVING:
         sendMessage("Archival in Progress, Don't Cancel it!", context.bot, update)
+        return
+    elif dl.status() == MirrorStatus.STATUS_SPLITTING:
+        sendMessage("Splitting in Progress, Don't Cancel it!", context.bot, update)
+        return
+    elif dl.status() == MirrorStatus.STATUS_EXTRACTING:
+        sendMessage("Extracting in Progress, Don't Cancel it!", context.bot, update)
         return
     else:
         dl.download().cancel_download()
-    sleep(1)  # Wait a Second For Aria2 To free Resources.
+    sleep(3)  # Wait a Second For Aria2 To free Resources.
     clean_download(f"{DOWNLOAD_DIR}{mirror_message.message_id}/")
 
 
