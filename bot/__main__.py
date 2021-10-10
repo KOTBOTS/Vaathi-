@@ -60,11 +60,23 @@ def stats(update, context):
 
 
 def start(update, context):
-    start_string = f"""
-This is a bot which can mirror all your links to Google drive!
+    buttons = button_build.ButtonMaker()
+    buttons.buildbutton("Repo", "https://github.com/bodysoda69/Vaathi-")
+    buttons.buildbutton("Channel", "https://t.me/VaathiCloud")
+    reply_markup = InlineKeyboardMarkup(buttons.build_menu(2))
+    if CustomFilters.authorized_user(update) or CustomFilters.authorized_chat(update):
+        start_string = f'''
+This bot can mirror all your links to Google Drive!
 Type /{BotCommands.HelpCommand} to get a list of available commands
-"""
-    sendMessage(start_string, context.bot, update)
+'''
+        sendMarkup(start_string, context.bot, update, reply_markup)
+    else:
+        sendMarkup(
+            'Not a Authorized user!',
+            context.bot,
+            update,
+            reply_markup,
+        )
 
 
 def restart(update, context):
@@ -96,13 +108,9 @@ def bot_help(update, context):
 
 /{BotCommands.UnzipMirrorCommand} [download_url][magnet_link] : starts mirroring and if downloaded file is any archive , extracts it to google drive
 
-/{BotCommands.TarMirrorCommand} [download_url][magnet_link]: start mirroring and upload the archived (.tar) version of the download
-
 /{BotCommands.ZipMirrorCommand} [download_url][magnet_link]: start mirroring and upload the archived (.tar) version of the download
 
 /{BotCommands.WatchCommand} [youtube-dl supported link]: Mirror through youtube-dl. Click /{BotCommands.WatchCommand} for more help.
-
-/{BotCommands.TarWatchCommand} [youtube-dl supported link]: Mirror through youtube-dl and tar before uploading
 
 /{BotCommands.ZipWatchCommand} [youtube-dl supported link]: Mirror through youtube-dl and tar before uploading
 
@@ -124,18 +132,23 @@ def bot_help(update, context):
 
 botcmds = [
     (f"{BotCommands.MirrorCommand}", "Start mirroring"),
-    (f"{BotCommands.TarMirrorCommand}", "Start mirroring and upload as .tar"),
     (f"{BotCommands.ZipMirrorCommand}", "Start mirroring and upload as .zip"),
     (f"{BotCommands.UnzipMirrorCommand}", "Extract files"),
+    (f"{BotCommands.LeechCommand}", "Start leeching"),
+    (f"{BotCommands.ZipLeechCommand}", "Start leeching and upload as .zip"),
+    (f"{BotCommands.UnzipLeechCommand}", "Extract files and upload"),
     (f"{BotCommands.CloneCommand}", "Copy file/folder from GDrive"),
     (f"{BotCommands.deleteCommand}", "Delete file from GDrive [owner only]"),
     (f"{BotCommands.WatchCommand}", "Mirror Youtube-dl support link"),
-    (f"{BotCommands.TarWatchCommand}", "Mirror Youtube playlist link as .tar"),
     (f"{BotCommands.ZipWatchCommand}", "Mirror Youtube playlist link as .zip"),
+    (f"{BotCommands.LeechWatchCommand}", "Leech Youtube link"),
+    (f"{BotCommands.LeechZipWatchCommand}", "Leech Youtube Playlist link as .zip"),
     (f"{BotCommands.CancelMirror}", "Cancel a task"),
     (f"{BotCommands.CancelAllCommand}", "Cancel all tasks [owner only]"),
     (f"{BotCommands.StatusCommand}", "Get mirror status"),
     (f"{BotCommands.StatsCommand}", "Bot usage stats"),
+    (f"{BotCommands.LeechSetCommand}", "Leech settings"),
+    (f"{BotCommands.SetThumbCommand}", "Set thumb"),
     (f"{BotCommands.PingCommand}", "Ping the bot"),
     (f"{BotCommands.RestartCommand}", "Restart the bot [owner only]"),
     (f"{BotCommands.LogCommand}", "Get the bot log [owner only]"),
