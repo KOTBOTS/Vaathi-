@@ -427,7 +427,7 @@ def _mirror(bot, update, isZip=False, extract=False, isLeech=False):
             if "Youtube" in str(e):
                 sendMessage(f"{e}", bot, update)                
         
-    listener = MirrorListener(bot, update, pswd, tag, isZip, extract, isLeech)
+    listener = MirrorListener(bot, update, pswd, isZip, extract, isLeech)
     
     
     if bot_utils.is_gdrive_link(link):
