@@ -61,13 +61,7 @@ from bot.helper.mirror_utils.upload_utils import gdriveTools, pyrogramEngine
 from bot.helper.telegram_helper import button_build
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.message_utils import (
-    delete_all_messages,
-    sendMarkup,
-    sendMessage,
-    sendStatusMessage,
-    update_all_messages,
-)
+from bot.helper.telegram_helper.message_utils import *
 
 ariaDlManager = AriaDownloadHelper()
 ariaDlManager.start_listener()
@@ -75,7 +69,7 @@ ariaDlManager.start_listener()
 
 class MirrorListener(listeners.MirrorListeners):
     def __init__(
-        self, bot, update, pswd, isZip=False, tag=None, extract=False, isLeech=False
+        self, bot, update, pswd, tag=None, isZip=False, extract=False, isLeech=False
     ):
         super().__init__(bot, update)
         self.isZip = isZip
@@ -103,12 +97,12 @@ class MirrorListener(listeners.MirrorListeners):
         with download_dict_lock:
             LOGGER.info(f"Download completed: {download_dict[self.uid].name()}")
             download = download_dict[self.uid]
-            name = download.name()
+            name = str(download.name()).replace('/', '')
             gid = download.gid()
             size = download.size_raw()
-            if name is None:  # when pyrogram's media.file_name is of NoneType
-                name = os.listdir(f"{DOWNLOAD_DIR}{self.uid}")[0]
-            m_path = f"{DOWNLOAD_DIR}{self.uid}/{name}"
+            if name == "None":
+                name = os.listdir(f'{DOWNLOAD_DIR}{self.uid}')[0]
+            m_path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         if self.isZip:
             try:
                 with download_dict_lock:
@@ -165,13 +159,13 @@ class MirrorListener(listeners.MirrorListeners):
                         os.remove(m_path)
                         LOGGER.info(f"Deleting archive: {m_path}")
                     else:
-                        LOGGER.warning('Unable to extract archive! Uploading anyway...')
+                        LOGGER.warning('Unable to extract archive! Uploading anyway')
                         path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
-                LOGGER.info(f'Got path: {path}')
+                LOGGER.info(f'got path: {path}')
 
             except NotSupportedExtractionArchive:
-                LOGGER.info("Not any valid archive, uploading file as it is!")
-                path = f"{DOWNLOAD_DIR}{self.uid}/{name}"
+                LOGGER.info("Not any valid archive, uploading file as it is.")
+                path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         else:
             path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         up_name = pathlib.PurePath(path).name
@@ -353,12 +347,17 @@ class MirrorListener(listeners.MirrorListeners):
             update_all_messages()
 
 
-def _mirror(bot, update, isTar=False, isZip=False, extract=False, isLeech=False):
+def _mirror(bot, update, isZip=False, extract=False, isLeech=False):
     mesg = update.message.text.split('\n')
     message_args = mesg[0].split(' ', maxsplit=1)
     name_args = mesg[0].split('|', maxsplit=2)
+    qbitsel = False
     try:
         link = message_args[1]
+        if link.startswith("s ") or link == "s":
+            qbitsel = True
+            message_args = mesg[0].split(' ', maxsplit=2)
+            link = message_args[2]
         if link.startswith("|") or link.startswith("pswd: "):
             link = ''
     except IndexError:
@@ -413,10 +412,9 @@ def _mirror(bot, update, isTar=False, isZip=False, extract=False, isLeech=False)
                 return
             else:
                 link = file.get_file().file_path
-    else:
-        tag = None
-    if not bot_utils.is_url(link) and not bot_utils.is_magnet(link):
-        sendMessage("No download source provided!", bot, update)
+
+    elif not bot_utils.is_url(link) and not bot_utils.is_magnet(link):
+        sendMessage('No download source provided!', bot, update)
         return
     elif not os.path.exists(link) and not bot_utils.is_mega_link(link) and not bot_utils.is_gdrive_link(link) and not bot_utils.is_magnet(link):
         try:
@@ -427,9 +425,7 @@ def _mirror(bot, update, isTar=False, isZip=False, extract=False, isLeech=False)
                 sendMessage(f"{e}", bot, update)
                 return
             if "Youtube" in str(e):
-                sendMessage(f"{e}", bot, update)
-                return
-
+                sendMessage(f"{e}", bot, update)                
         
     listener = MirrorListener(bot, update, pswd, tag, isZip, extract, isLeech)
     
