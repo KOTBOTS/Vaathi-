@@ -8,7 +8,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 RUN set -ex \
     && chmod 777 /usr/src/app \
-    && cp netrc /root/.netrc \
+    && cp netrc /usr/src/app/.netrc \
     && cp extract pextract /usr/local/bin \
     && chmod +x /usr/local/bin/extract /usr/local/bin/pextract
 
