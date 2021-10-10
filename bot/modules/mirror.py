@@ -232,7 +232,7 @@ class MirrorListener(listeners.MirrorListeners):
     def onUploadProgress(self):
         pass
 
-    def onUploadComplete(self, link: str, size, files, folders, typ):
+    def onUploadComplete(self, link: str, size):
         if self.isLeech:
             if self.message.from_user.username:
                 uname = f"@{self.message.from_user.username}"
@@ -351,13 +351,8 @@ def _mirror(bot, update, isZip=False, extract=False, isLeech=False):
     mesg = update.message.text.split('\n')
     message_args = mesg[0].split(' ', maxsplit=1)
     name_args = mesg[0].split('|', maxsplit=2)
-    qbitsel = False
     try:
         link = message_args[1]
-        if link.startswith("s ") or link == "s":
-            qbitsel = True
-            message_args = mesg[0].split(' ', maxsplit=2)
-            link = message_args[2]
         if link.startswith("|") or link.startswith("pswd: "):
             link = ''
     except IndexError:
