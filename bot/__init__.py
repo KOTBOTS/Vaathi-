@@ -36,15 +36,17 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 CONFIG_FILE_URL = os.environ.get('CONFIG_FILE_URL', None)
 if CONFIG_FILE_URL is not None:
     res = requests.get(CONFIG_FILE_URL)
     if res.status_code == 200:
-        with open('config.env', 'wb') as f:
-            f.truncate(0)
+        with open('config.env', 'wb+') as f:
             f.write(res.content)
+            f.close()
     else:
-        logging.error(res.status_code)
+        logging.error(f"Failed to download config.env {res.status_code}")
 
 load_dotenv("config.env")
 
@@ -53,9 +55,6 @@ Interval = []
 
 def getConfig(name: str):
     return os.environ[name]
-
-
-LOGGER = logging.getLogger(__name__)
 
 
 def mktable():
@@ -302,12 +301,11 @@ except KeyError:
     SHORTENER = None
     SHORTENER_API = None
 
-IGNORE_PENDING_REQUESTS = False
 try:
-    if getConfig("IGNORE_PENDING_REQUESTS").lower() == "true":
-        IGNORE_PENDING_REQUESTS = True
+    IGNORE_PENDING_REQUESTS = getConfig("IGNORE_PENDING_REQUESTS")
+    IGNORE_PENDING_REQUESTS = IGNORE_PENDING_REQUESTS.lower() == 'true'
 except KeyError:
-    pass
+    IGNORE_PENDING_REQUESTS = False
 try:
     TOKEN_PICKLE_URL = getConfig('TOKEN_PICKLE_URL')
     if len(TOKEN_PICKLE_URL) == 0:
@@ -315,11 +313,11 @@ try:
     else:
         res = requests.get(TOKEN_PICKLE_URL)
         if res.status_code == 200:
-            with open('token.pickle', 'wb') as f:
-                f.truncate(0)
+            with open('token.pickle', 'wb+') as f:
                 f.write(res.content)
+                f.close()
         else:
-            logging.error(res.status_code)
+            logging.error(f"Failed to download token.pickle {res.status_code}")
             raise KeyError
 except KeyError:
     pass
@@ -330,16 +328,17 @@ try:
     else:
         res = requests.get(ACCOUNTS_ZIP_URL)
         if res.status_code == 200:
-            with open('accounts.zip', 'wb') as f:
-                f.truncate(0)
+            with open('accounts.zip', 'wb+') as f:
                 f.write(res.content)
+                f.close()
         else:
-            logging.error(res.status_code)
+            logging.error(f"Failed to download accounts.zip {res.status_code}")
             raise KeyError
         subprocess.run(["unzip", "-q", "-o", "accounts.zip"])
         os.remove("accounts.zip")
 except KeyError:
     pass
+
 try:
     STOP_DUPLICATE_MIRROR = getConfig('STOP_DUPLICATE_MIRROR')
     if STOP_DUPLICATE_MIRROR.lower() == 'true':
@@ -348,17 +347,20 @@ try:
         STOP_DUPLICATE_MIRROR = False
 except KeyError:
     STOP_DUPLICATE_MIRROR = False
-try:
-    TG_SPLIT_SIZE = getConfig('TG_SPLIT_SIZE')
-    if len(TG_SPLIT_SIZE) == 0 or int(TG_SPLIT_SIZE) > 2097152000:
-        raise KeyError
-except KeyError:
-    TG_SPLIT_SIZE = 2097152000
+    
 try:
     AS_DOCUMENT = getConfig('AS_DOCUMENT')
     AS_DOCUMENT = AS_DOCUMENT.lower() == 'true'
 except KeyError:
-    AS_DOCUMENT = False
+    AS_DOCUMENT = False    
+try:
+    TG_SPLIT_SIZE = getConfig('TG_SPLIT_SIZE')
+    if len(TG_SPLIT_SIZE) == 0 or int(TG_SPLIT_SIZE) > 2097152000:
+        raise KeyError
+    else:
+        TG_SPLIT_SIZE = int(TG_SPLIT_SIZE)
+except KeyError:
+    TG_SPLIT_SIZE = 2097152000
 
 updater = tg.Updater(token=BOT_TOKEN)
 bot = updater.bot
