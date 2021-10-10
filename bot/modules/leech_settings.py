@@ -53,25 +53,25 @@ def setLeechType(update, context):
         elif user_id in AS_MEDIA_USERS:
             AS_MEDIA_USERS.remove(user_id)
             AS_DOC_USERS.add(user_id)
-            query.answer(text="Done!", show_alert=True)
+            query.answer(text="Success!", show_alert=True)
         else:
             AS_DOC_USERS.add(user_id)
-            query.answer(text="Done!", show_alert=True)
+            query.answer(text="Success!", show_alert=True)
     elif data[0] == "med":
         if user_id in AS_DOC_USERS:
             AS_DOC_USERS.remove(user_id)
             AS_MEDIA_USERS.add(user_id)
-            query.answer(text="Done!", show_alert=True)
+            query.answer(text="Success!", show_alert=True)
         elif user_id in AS_MEDIA_USERS or not AS_DOCUMENT:
             query.answer(text="Already As Media!", show_alert=True)
         else:
             AS_MEDIA_USERS.add(user_id)
-            query.answer(text="Done!", show_alert=True)
+            query.answer(text="Success!", show_alert=True)
     elif data[0] == "thumb":
         path = f"Thumbnails/{user_id}.jpg"
         if os.path.lexists(path):
             os.remove(path)
-            query.answer(text="Done!", show_alert=True)
+            query.answer(text="Success!", show_alert=True)
         else:
             query.answer(text="No Thumbnail To Delete!", show_alert=True)
     elif data[0] == "closeset":
