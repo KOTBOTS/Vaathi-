@@ -52,7 +52,7 @@ def _watch(bot: Bot, update, isZip=False, isLeech=False):
     reply_to = update.message.reply_to_message
     tag = reply_to.from_user.username if reply_to is not None else None
     pswd = ""
-    listener = MirrorListener(bot, update, pswd, tag, isTar, isZip, isLeech=isLeech)
+    listener = MirrorListener(bot, update, pswd, tag, isZip, isLeech=isLeech)
     ydl = YoutubeDLHelper(listener)
     threading.Thread(
         target=ydl.add_download,
