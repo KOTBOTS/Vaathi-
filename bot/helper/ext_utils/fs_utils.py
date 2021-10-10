@@ -65,16 +65,6 @@ def get_path_size(path):
     return total_size
 
 
-def tar(org_path):
-    tar_path = org_path + ".tar"
-    path = pathlib.PurePath(org_path)
-    LOGGER.info(f"Tar: orig_path: {org_path}, tar_path: {tar_path}")
-    tar = tarfile.open(tar_path, "w")
-    tar.add(org_path, arcname=path.name)
-    tar.close()
-    return tar_path
-
-
 def zip(name, path):
     root_dir = os.path.dirname(path)
     base_dir = os.path.basename(path.strip(os.sep))
