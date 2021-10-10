@@ -22,23 +22,25 @@ class AriaDownloadHelper(DownloadHelper):
 
     @new_thread
     def __onDownloadStarted(self, api, gid):
+        sleep(1)
+        LOGGER.info(f"onDownloadStart: {gid}")
+        dl = getDownloadByGid(gid)
+        download = api.get_download(gid)
+        self.name = download.name
+        sname = download.name
         if STOP_DUPLICATE_MIRROR:
-            sleep(1)
-            dl = getDownloadByGid(gid)
-            download = aria2.get_download(gid)
-            if STOP_DUPLICATE_MIRROR and dl is not None and not dl.getListener().isLeech:
-                LOGGER.info('Checking File/Folder if already in Drive...')
-                sname = aria2.get_download(gid).name
-                if dl.getListener().isZip:
-                    sname = sname + ".zip"
-                if not dl.getListener().extract:
-                    gdrive = GoogleDriveHelper()
-                    smsg, button = gdrive.drive_list(sname, True)
-                    if smsg:
-                         dl.getListener().onDownloadError('File/Folder already available in Drive.\n\n')
-                         aria2.remove([download], force=True)
-                         sendMarkup("Here are the search results:", dl.getListener().bot, dl.getListener().update, button)
-                         return
+          if dl.getListener().isZip == True:
+            sname = sname + ".zip"
+          if dl.getListener().extract == True:
+            smsg = None
+          else:
+            gdrive = GoogleDriveHelper(None)
+            smsg, button = gdrive.drive_list(sname)
+          if smsg:
+              dl.getListener().onDownloadError(f'File/Folder is already available in drive. This download has been stopped.\n\n')
+              sendMarkup("Here are the search results:", dl.getListener().bot, dl.getListener().update, button)
+              aria2.remove([download])
+          return
         update_all_messages()
 
     def __onDownloadComplete(self, api: API, gid):
