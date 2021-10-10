@@ -17,8 +17,8 @@ class MirrorStatus:
     STATUS_UPLOADING = "Uploading...📤"
     STATUS_DOWNLOADING = "Downloading...📥"
     STATUS_WAITING = "Queued...📝"
-    STATUS_FAILED = "Failed. 🚫 Cleaning download..."
-    STATUS_CANCELLED = "Cancelled. ❌ Cleaning download..."
+    STATUS_FAILED = "Failed.🚫 Cleaning download..."
+    STATUS_CANCELLED = "Cancelled.❌ Cleaning download..."
     STATUS_ARCHIVING = "Archiving...🔐"
     STATUS_EXTRACTING = "Extracting...📂"
     STATUS_SPLITTING = "Splitting...✂️"
@@ -76,6 +76,25 @@ def getDownloadByGid(gid):
                 and dl.gid() == gid
             ):
                 return dl
+    return None
+
+
+def getAllDownload():
+    with download_dict_lock:
+        for dlDetails in download_dict.values():
+            status = dlDetails.status()
+            if (
+                status
+                not in [
+                    MirrorStatus.STATUS_ARCHIVING,
+                    MirrorStatus.STATUS_EXTRACTING,
+                    MirrorStatus.STATUS_SPLITTING,
+                    MirrorStatus.STATUS_CLONING,
+                    MirrorStatus.STATUS_UPLOADING,
+                ]
+                and dlDetails
+            ):
+                return dlDetails
     return None
 
 
@@ -145,24 +164,28 @@ def get_readable_time(seconds: int) -> str:
     result += f"{seconds}s"
     return result
 
-
-def is_gdrive_link(url: str):
-    return "drive.google.com" in url
-
-
-def is_mega_link(url: str):
-    return "mega.nz" in url or "mega.co.nz" in url
-
-
 def is_url(url: str):
     url = re.findall(URL_REGEX, url)
     return bool(url)
 
+def is_gdrive_link(url: str):
+    return "drive.google.com" in url
+
+def is_mega_link(url: str):
+    return "mega.nz" in url or "mega.co.nz" in url
+
+def get_mega_link_type(url: str):
+    if "folder" in url:
+        return "folder"
+    elif "file" in url:
+        return "file"
+    elif "/#F!" in url:
+        return "folder"
+    return "file"
 
 def is_magnet(url: str):
     magnet = re.findall(MAGNET_REGEX, url)
     return bool(magnet)
-
 
 def new_thread(fn):
     """To use as decorator to make a function call threaded.
