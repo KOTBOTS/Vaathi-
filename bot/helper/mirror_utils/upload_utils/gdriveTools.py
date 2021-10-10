@@ -195,7 +195,7 @@ class GoogleDriveHelper:
         # File body description
         file_metadata = {
             "name": file_name,
-            "description": "mirror",
+            "description": "Vaathi-",
             "mimeType": mime_type,
         }
         if parent_id is not None:
