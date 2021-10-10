@@ -483,7 +483,7 @@ def mirror(update, context):
 
 
 def zip_mirror(update, context):
-    _mirror(context.bot, update, True, isZip=True)
+    _mirror(context.bot, update, True)
 
 
 def unzip_mirror(update, context):
@@ -499,7 +499,7 @@ def unzip_leech(update, context):
 
 
 def zip_leech(update, context):
-    _mirror(context.bot, update, True, isZip=True, isLeech=True)
+    _mirror(context.bot, update, True, isLeech=True)
 
 
 mirror_handler = CommandHandler(
