@@ -484,12 +484,12 @@ def leech(update, context):
     _mirror(context.bot, update, isLeech=True)
 
 
-def unzip_leech(update, context):
-    _mirror(context.bot, update, extract=True, isLeech=True)
-
-
 def zip_leech(update, context):
     _mirror(context.bot, update, isZip=True, isLeech=True)
+    
+
+def unzip_leech(update, context):
+    _mirror(context.bot, update, extract=True, isLeech=True)
 
 
 mirror_handler = CommandHandler(
@@ -512,14 +512,14 @@ unzip_mirror_handler = CommandHandler(
 )
 leech_handler = CommandHandler(BotCommands.LeechCommand, leech,
                                filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
-
-unzip_leech_handler = CommandHandler(BotCommands.UnzipLeechCommand, unzip_leech,
-                                     filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
 zip_leech_handler = CommandHandler(BotCommands.ZipLeechCommand, zip_leech,
                                    filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+unzip_leech_handler = CommandHandler(BotCommands.UnzipLeechCommand, unzip_leech,
+                                     filters=CustomFilters.authorized_chat | CustomFilters.authorized_user, run_async=True)
+
 dispatcher.add_handler(mirror_handler)
 dispatcher.add_handler(zip_mirror_handler)
 dispatcher.add_handler(unzip_mirror_handler)
 dispatcher.add_handler(leech_handler)
-dispatcher.add_handler(unzip_leech_handler)
 dispatcher.add_handler(zip_leech_handler)
+dispatcher.add_handler(unzip_leech_handler)
