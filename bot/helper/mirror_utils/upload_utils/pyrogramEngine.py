@@ -54,7 +54,7 @@ class TgUploader:
                 self.last_uploaded = 0
                 time.sleep(1)
         LOGGER.info(f"Leech Done: {self.name}")
-        self.__listener.onUploadComplete(self.name, None, msgs_dict, None, corrupted)
+        self.__listener.onUploadComplete(self.name, msgs_dict, corrupted)
 
     def upload_file(self, up_path, filee, dirpath):
         cap_mono = f"<code>{filee}</code>"
