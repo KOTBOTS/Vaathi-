@@ -61,8 +61,8 @@ def stats(update, context):
 
 def start(update, context):
     buttons = button_build.ButtonMaker()
-    buttons.buildbutton("Repo", "https://github.com/bodysoda69/Vaathi-")
-    buttons.buildbutton("Channel", "https://t.me/VaathiCloud")
+    buttons.buildbutton("Repo", "https://t.me/KOT_FREE_DE_LA_HOYA_OFF")
+    buttons.buildbutton("Channel", "https://t.me/KOT_BOTS")
     reply_markup = InlineKeyboardMarkup(buttons.build_menu(2))
     if CustomFilters.authorized_user(update) or CustomFilters.authorized_chat(update):
         start_string = f'''
